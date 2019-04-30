@@ -109,6 +109,22 @@ def test_pollenate():
     else:
         assert False, "AFL failed to synchronize pollenated seed."
 
+def inprogress_dict():
+    va = os.path.join(bin_location, "tests/x86_64/veritesting_a")
+    f = phuzzer.AFL(va, resume=False, dictionary=[b"B"])
+    f.start()
+
+    time.sleep(1)
+    assert f.alive
+
+    # this should get synchronized
+    for _ in range(30):
+        if any(t.count(b"B") == 10 in t for t in f.queue()):
+            break
+        time.sleep(1)
+    else:
+        assert False, "AFL failed to find the easter egg given a dict."
+
 def run_all():
     functions = globals()
     all_functions = dict(filter((lambda kv: kv[0].startswith('test_')), functions.items()))
