@@ -26,7 +26,7 @@ Then, install this fuzzer wrapper:
 ## Usage
 
 There are two ways of using this package.
-The easy way is to use the `shellphuzz` script, which allows you to specify various options, enable [driller](https://www.internetsociety.org/sites/default/files/blogs-media/driller-augmenting-fuzzing-through-selective-symbolic-execution.pdf), etc.
+The easy way is to use the `shellphuzz` script, which allows you to specify various options, enable [driller](https://sites.cs.ucsb.edu/~vigna/publications/2016_NDSS_Driller.pdf), etc.
 The script has explanations about its usage with `--help`.
 
 A quick example:
