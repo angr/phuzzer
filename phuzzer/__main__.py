@@ -11,7 +11,7 @@ import argparse
 import importlib
 import logging.config
 
-from . import Phuzzer
+from . import AFL
 from . import GreaseCallback
 
 def main():
@@ -23,15 +23,16 @@ def main():
     parser.add_argument('-w', '--work-dir', help="The work directory for AFL.", default="/dev/shm/work/")
     parser.add_argument('-c', '--afl-cores', help="Number of AFL workers to spin up.", default=1, type=int)
     parser.add_argument('-C', '--first-crash', help="Stop on the first crash.", action='store_true', default=False)
-    parser.add_argument('-t', '--timeout', help="Timeout (in seconds).", type=float)
+    parser.add_argument('-t', '--timeout', help="Timeout (in seconds).", type=float, default=None)
     parser.add_argument('-i', '--ipython', help="Drop into ipython after starting the fuzzer.", action='store_true')
     parser.add_argument('-T', '--tarball', help="Tarball the resulting AFL workdir for further analysis to this file -- '{}' is replaced with the hostname.")
-    parser.add_argument('-m', '--helper-module', help="A module that includes some helper scripts for seed selection and such.")
+    parser.add_argument('-m', '--helper-module',
+                        help="A module that includes some helper scripts for seed selection and such.")
     parser.add_argument('--memory', help="Memory limit to pass to AFL (MB, or use k, M, G, T suffixes)", default="8G")
     parser.add_argument('--no-dictionary', help="Do not create a dictionary before fuzzing.", action='store_true', default=False)
     parser.add_argument('--logcfg', help="The logging configuration file.", default=".shellphuzz.ini")
     parser.add_argument('-s', '--seed-dir', action="append", help="Directory of files to seed fuzzer with")
-    parser.add_argument('--run-timeout', help="Number of seconds permitted for each run of binary", type=int)
+    parser.add_argument('--run-timeout', help="Number of milliseconds permitted for each run of binary", type=int, default=None)
     parser.add_argument('--driller-timeout', help="Number of seconds to allow driller to run", type=int, default=10*60)
     parser.add_argument('--length-extension', help="Try extending inputs to driller by this many bytes", type=int)
     args = parser.parse_args()
@@ -82,16 +83,16 @@ def main():
                     seeds.append(seedfile.read())
 
     print ("[*] Creating fuzzer...")
-    fuzzer = Phuzzer(
-        args.binary, args.work_dir, afl_count=args.afl_cores, force_interval=args.force_interval,
-        create_dictionary=not args.no_dictionary, stuck_callback=stuck_callback, time_limit=args.timeout,
-        memory=args.memory, seeds=seeds, timeout=args.run_timeout,
+    fuzzer = AFL(
+        args.binary, work_dir=args.work_dir, seeds=seeds, afl_count=args.afl_cores,
+        create_dictionary=not args.no_dictionary, timeout=args.timeout,
+        memory=args.memory, run_timeout=args.run_timeout,
     )
 
     # start it!
     print ("[*] Starting fuzzer...")
     fuzzer.start()
-
+    start_time = time.time()
     if args.ipython:
         print ("[!]")
         print ("[!] Launching ipython shell. Relevant variables:")
@@ -103,30 +104,33 @@ def main():
         import IPython; IPython.embed()
 
     try:
-        print ("[*] Waiting for fuzzer completion (timeout: %s, first_crash: %s)." % (args.timeout, args.first_crash))
-
+        #print ("[*] Waiting for fuzzer completion (timeout: %s, first_crash: %s)." % (args.timeout, args.first_crash))
         crash_seen = False
         while True:
-            time.sleep(5)
+            elapsed_time = time.time() - start_time
+            status_str = build_status_str(elapsed_time, args.first_crash, args.timeout, args.afl_cores, fuzzer)
+            print(status_str, end="\r")
+            time.sleep(1)
             if not crash_seen and fuzzer.found_crash():
-                print ("[*] Crash found!")
+                #print ("\n[*] Crash found!")
                 crash_seen = True
                 if args.first_crash:
                     break
             if fuzzer.timed_out():
-                print ("[*] Timeout reached.")
+                print ("\n[*] Timeout reached.")
                 break
+
     except KeyboardInterrupt:
-        print ("[*] Aborting wait. Ctrl-C again for KeyboardInterrupt.")
+        print ("\n[*] Aborting wait. Ctrl-C again for KeyboardInterrupt.")
     except Exception as e:
-        print ("[*] Unknown exception received (%s). Terminating fuzzer." % e)
-        fuzzer.kill()
+        print ("\n[*] Unknown exception received (%s). Terminating fuzzer." % e)
+        fuzzer.stop()
         if drill_extension:
             drill_extension.kill()
         raise
 
     print ("[*] Terminating fuzzer.")
-    fuzzer.kill()
+    fuzzer.stop()
     if drill_extension:
         drill_extension.kill()
 
@@ -146,6 +150,27 @@ def main():
         tar.close()
         print ("[*] Copying out result tarball to %s" % tar_name)
         shutil.move("/tmp/afl_sync.tar.gz", tar_name)
+
+
+def build_status_str(elapsed_time, first_crash, timeout, afl_cores, fuzzer):
+    run_until_str = ""
+    timeout_str = ""
+    if timeout:
+        if first_crash:
+            run_until_str = "until first crash or "
+        run_until_str += "timeout "
+        timeout_str = "for %d of %d seconds " % (elapsed_time, timeout)
+    elif first_crash:
+        run_until_str = "until first crash "
+    else:
+        run_until_str = "until stopped by you "
+
+    summary_stats = fuzzer.summary_stats
+
+    return "[*] %d fuzzers running %s%scompleted %d execs at %d execs/sec with %d crashes)." % \
+           (afl_cores, run_until_str, timeout_str, summary_stats["execs_done"], summary_stats["execs_per_sec"],
+            summary_stats["unique_crashes"])
+
 
 if __name__ == "__main__":
     main()

@@ -1,3 +1,4 @@
+from os.path import join
 import time
 import phuzzer
 
@@ -8,10 +9,38 @@ import os
 bin_location = str(os.path.join(os.path.dirname(os.path.realpath(__file__)), '../../binaries'))
 fuzzer_bin = str(os.path.join(os.path.dirname(os.path.realpath(__file__)), '../bin'))
 
+
+def test_parallel_execution():
+    """
+    test parallel execution, summary stats, and the timed_out method of Phuzzer
+    """
+    timeout_value = 5
+    binary = os.path.join(bin_location, "tests/cgc/ccf3d301_01")
+    afl = phuzzer.AFL(binary, work_dir="/tmp/testwork", afl_count=3, create_dictionary=True, resume=False,
+                      timeout=timeout_value)
+
+    afl.start()
+
+    start_time = time.time()
+    while not afl.timed_out():
+        time.sleep(.75)
+    elapsed_time = time.time() - start_time
+    assert elapsed_time <= (timeout_value + 1)
+
+    assert os.path.exists(join(afl.work_dir, "fuzzer-master", "queue"))
+    assert os.path.exists(join(afl.work_dir, "fuzzer-1", "queue"))
+    assert os.path.exists(join(afl.work_dir, "fuzzer-2", "queue"))
+
+    assert afl.summary_stats["execs_done"] > 0
+    assert afl.summary_stats["execs_per_sec"] > 0
+
+    afl.stop()
+
+
 def test_dictionary_creation_cgc():
-    '''
+    """
     test dictionary creation on a binary
-    '''
+    """
 
     binary = os.path.join(bin_location, "tests/cgc/ccf3d301_01")
     afl = phuzzer.AFL(binary, create_dictionary=True, resume=False)
@@ -20,6 +49,7 @@ def test_dictionary_creation_cgc():
     afl.start()
     assert os.path.exists(afl.dictionary_file)
     afl.stop()
+
 
 def test_minimizer():
     """
@@ -33,6 +63,7 @@ def test_minimizer():
     m = phuzzer.Minimizer(binary, crash)
 
     assert m.minimize() == b'100'
+
 
 def test_showmap():
     """
@@ -50,6 +81,7 @@ def test_showmap():
 
     for te in true_dict:
         assert true_dict[te] == smap[te]
+
 
 def test_fuzzer_spawn():
     """
@@ -69,6 +101,7 @@ def test_fuzzer_spawn():
     assert f.alive
     if f.alive:
         f.stop()
+
 
 def test_multicb_spawn():
     """
@@ -93,6 +126,7 @@ def test_multicb_spawn():
     if f.alive:
         f.stop()
 
+
 def test_pollenate():
     fauxware = os.path.join(bin_location, "tests/i386/fauxware")
     f = phuzzer.AFL(fauxware, resume=False)
@@ -108,6 +142,7 @@ def test_pollenate():
         time.sleep(1)
     else:
         assert False, "AFL failed to synchronize pollenated seed."
+
 
 def inprogress_dict():
     va = os.path.join(bin_location, "tests/x86_64/veritesting_a")
@@ -125,12 +160,14 @@ def inprogress_dict():
     else:
         assert False, "AFL failed to find the easter egg given a dict."
 
+
 def run_all():
     functions = globals()
     all_functions = dict(filter((lambda kv: kv[0].startswith('test_')), functions.items()))
     for f in sorted(all_functions.keys()):
         if hasattr(all_functions[f], '__call__'):
             all_functions[f]()
+
 
 if __name__ == "__main__":
     logging.getLogger("phuzzer").setLevel("DEBUG")

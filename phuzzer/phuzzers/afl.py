@@ -1,3 +1,7 @@
+
+from ..util import hexescape
+from ..errors import InstallError
+from collections import defaultdict
 import shellphish_afl
 import subprocess
 import contextlib
@@ -8,19 +12,21 @@ import angr
 import os
 
 l = logging.getLogger("phuzzer.phuzzers.afl")
+l.setLevel(logging.DEBUG)
 
 from . import Phuzzer
 class AFL(Phuzzer):
-    ''' Phuzzer object, spins up a fuzzing job on a binary '''
+    """ Phuzzer object, spins up a fuzzing job on a binary """
 
     def __init__(
         self, target, seeds=None, dictionary=None, create_dictionary=None,
         work_dir=None, seeds_dir=None, resume=False,
         afl_count=1, memory="8G", timeout=None,
         library_path=None, target_opts=None, extra_opts=None,
-        crash_mode=False, use_qemu=True
+        crash_mode=False, use_qemu=True,
+        run_timeout=None
     ):
-        '''
+        """
         :param binary_path: path to the binary to fuzz. List or tuple for multi-CB.
         :param seeds: list of inputs to seed fuzzing with
         :param dictionary: a list of bytes objects to seed the dictionary with
@@ -39,9 +45,8 @@ class AFL(Phuzzer):
 
         :param crash_mode: if set to True AFL is set to crash explorer mode, and seed will be expected to be a crashing input
         :param use_qemu: Utilize QEMU for instrumentation of binary.
-        '''
-
-        super().__init__(target, seeds=seeds, dictionary=dictionary, create_dictionary=create_dictionary)
+        """
+        super().__init__(target, seeds=seeds, dictionary=dictionary, create_dictionary=create_dictionary, timeout=timeout)
 
         self.work_dir = work_dir or os.path.join("/tmp", "phuzzer", os.path.basename(str(target)))
         if resume and os.path.isdir(self.work_dir):
@@ -56,7 +61,6 @@ class AFL(Phuzzer):
 
         self.afl_count      = afl_count
         self.memory         = memory
-        self.timeout        = timeout
 
         self.library_path   = library_path
         self.target_opts    = target_opts or [ ]
@@ -65,13 +69,15 @@ class AFL(Phuzzer):
         self.crash_mode     = crash_mode
         self.use_qemu       = use_qemu
 
+        self.run_timeout = run_timeout
+
         # sanity check crash mode
         if self.crash_mode:
             if seeds is None:
                 raise ValueError("Seeds must be specified if using the fuzzer in crash mode")
             l.info("AFL will be started in crash mode")
 
-
+        print("choosing AFL")
         # set up the paths
         self.afl_path = self.choose_afl()
 
@@ -104,9 +110,9 @@ class AFL(Phuzzer):
         return os.path.join(self.work_dir, "dict.txt")
 
     def start(self):
-        '''
+        """
         start fuzzing
-        '''
+        """
 
         super().start()
 
@@ -135,7 +141,7 @@ class AFL(Phuzzer):
         self.processes.append(master)
 
         # only spins up an AFL instances if afl_count > 1
-        for _ in range(2, self.afl_count):
+        for _ in range(1, self.afl_count):
             self.processes.append(self._start_afl_instance())
 
         return self
@@ -154,6 +160,19 @@ class AFL(Phuzzer):
                 pass
 
         return bool(alive_cnt)
+
+    @property
+    def summary_stats(self):
+        stats = self.stats
+        summary_stats = defaultdict(lambda: 0)
+        for _, fuzzstats in stats.items():
+            for fstat, value in fuzzstats.items():
+                try:
+                    fvalue = float(value)
+                    summary_stats[fstat] += fvalue
+                except ValueError:
+                    pass
+        return summary_stats
 
     @property
     def stats(self):
@@ -217,10 +236,10 @@ class AFL(Phuzzer):
     #
 
     def bitmap(self, fuzzer='fuzzer-master'):
-        '''
+        """
         retrieve the bitmap for the fuzzer `fuzzer`.
         :return: a string containing the contents of the bitmap.
-        '''
+        """
 
         if not fuzzer in os.listdir(self.work_dir):
             raise ValueError("fuzzer '%s' does not exist" % fuzzer)
@@ -270,18 +289,17 @@ class AFL(Phuzzer):
         if err:
             raise InstallError(err)
 
-
     def add_core(self):
-        '''
+        """
         add one fuzzer
-        '''
+        """
 
         self.processes.append(self._start_afl_instance())
 
     def remove_core(self):
-        '''
+        """
         remove one fuzzer
-        '''
+        """
 
         try:
             f = self.processes.pop()
@@ -304,10 +322,10 @@ class AFL(Phuzzer):
         return self._get_crashing_inputs(signals)
 
     def queue(self, fuzzer='fuzzer-master'):
-        '''
+        """
         retrieve the current queue of inputs from a fuzzer
         :return: a list of strings which represent a fuzzer's queue
-        '''
+        """
 
         if not fuzzer in os.listdir(self.work_dir):
             raise ValueError("fuzzer '%s' does not exist" % fuzzer)
@@ -323,11 +341,11 @@ class AFL(Phuzzer):
         return queue_l
 
     def pollenate(self, *testcases):
-        '''
+        """
         pollenate a fuzzing job with new testcases
 
         :param testcases: list of bytes objects representing new inputs to introduce
-        '''
+        """
 
         nectary_queue_directory = os.path.join(self.work_dir, 'pollen', 'queue')
         if not 'pollen' in os.listdir(self.work_dir):
@@ -361,22 +379,21 @@ class AFL(Phuzzer):
 
         if len(self.processes) == 0:
             fuzzer_id = "fuzzer-master"
-            args += ["-M", "fuzzer-master"]
+            args += ["-M", fuzzer_id]
         else:
             fuzzer_id = "fuzzer-%d" % len(self.processes)
-            args += ["-S", "fuzzer-%d" % len(fuzzer_id)]
+            args += ["-S", fuzzer_id]
 
         if os.path.exists(self.dictionary_file):
             args += ["-x", self.dictionary_file]
 
         args += self.extra_opts
 
-        if self.timeout is not None:
-            args += ["-t", "%d+" % self.timeout]
+        if self.run_timeout is not None:
+            args += ["-t", "%d+" % self.run_timeout]
         args += ["--"]
         args += [self.target]
         args += self.target_opts
-
 
         with open(os.path.join(self.work_dir, fuzzer_id+".cmd"), "w") as cf:
             cf.write(" ".join(args) + "\n")
@@ -400,7 +417,7 @@ class AFL(Phuzzer):
             afl_path_var = shellphish_afl.afl_path_var('cgc')
         else:
             afl_path_var = shellphish_afl.afl_path_var(p.arch.qemu_name)
-
+            directory = None
             if p.arch.qemu_name == "aarch64":
                 directory = "arm64"
             if p.arch.qemu_name == "i386":
@@ -436,5 +453,3 @@ class AFL(Phuzzer):
         # return the AFL path
         return shellphish_afl.afl_bin(target_os)
 
-from ..errors import InstallError
-from ..util import hexescape
