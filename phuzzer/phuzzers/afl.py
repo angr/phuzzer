@@ -77,7 +77,6 @@ class AFL(Phuzzer):
                 raise ValueError("Seeds must be specified if using the fuzzer in crash mode")
             l.info("AFL will be started in crash mode")
 
-        print("choosing AFL")
         # set up the paths
         self.afl_path = self.choose_afl()
 
