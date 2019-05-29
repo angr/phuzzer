@@ -12,15 +12,15 @@ import os
 l = logging.getLogger("phuzzer.phuzzers")
 
 class Phuzzer:
-    ''' Phuzzer object, spins up a fuzzing job on a binary '''
+    """ Phuzzer object, spins up a fuzzing job on a binary """
 
-    def __init__(self, target, seeds=None, dictionary=None, create_dictionary=False):
-        '''
+    def __init__(self, target, seeds=None, dictionary=None, create_dictionary=False, timeout=None):
+        """
         :param target: the target (i.e., path to the binary to fuzz, or a docker target)
         :param seeds: list of inputs to seed fuzzing with
         :param dictionary: a list of bytes objects to seed the dictionary with
         :param create_dictionary: create a dictionary from the string references in the binary
-        '''
+        """
 
         self.target = target
         self.seeds = seeds or [ ]
@@ -30,6 +30,7 @@ class Phuzzer:
 
         self.start_time = None
         self.end_time = None
+        self.timeout = timeout
 
         self.check_environment()
 
@@ -48,11 +49,16 @@ class Phuzzer:
             self.add_core()
 
     def remove_cores(self, n):
-        '''
+        """
         remove multiple fuzzers
-        '''
+        """
         for _ in range(n):
             self.remove_core()
+
+    def timed_out(self):
+        if self.timeout is None:
+            return False
+        return time.time() - self.start_time > self.timeout
 
     def start(self):
         self.start_time = int(time.time())
@@ -170,18 +176,18 @@ class Phuzzer:
         raise NotImplementedError()
 
     def queue(self, fuzzer='fuzzer-master'):
-        '''
+        """
         retrieve the current queue of inputs from a fuzzer
         :return: a list of strings which represent a fuzzer's queue
-        '''
+        """
         raise NotImplementedError()
 
     def pollenate(self, *testcases):
-        '''
+        """
         pollenate a fuzzing job with new testcases
 
         :param testcases: list of bytes objects representing new inputs to introduce
-        '''
+        """
         raise NotImplementedError()
 
     def add_core(self):
