@@ -1,9 +1,10 @@
 from os.path import join
 import time
 import phuzzer
-
+import sys
 import logging
 l = logging.getLogger("fuzzer.tests.test_fuzzer")
+l.setLevel(logging.DEBUG)
 
 import os
 bin_location = str(os.path.join(os.path.dirname(os.path.realpath(__file__)), '../../binaries'))
@@ -14,6 +15,8 @@ def test_parallel_execution():
     """
     test parallel execution, summary stats, and the timed_out method of Phuzzer
     """
+    l.info("PARALLEL_EXEC: Starting parallel test, using {} in python {}".format(phuzzer.__file__, repr(sys.version)))
+
     timeout_value = 5
     binary = os.path.join(bin_location, "tests/cgc/ccf3d301_01")
     afl = phuzzer.phuzzers.AFL(binary, work_dir="/tmp/testwork", afl_count=2, create_dictionary=True, resume=False,
