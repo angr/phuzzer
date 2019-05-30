@@ -19,7 +19,7 @@ def test_parallel_execution():
 
     timeout_value = 5
     binary = os.path.join(bin_location, "tests/cgc/ccf3d301_01")
-    afl = phuzzer.phuzzers.AFL(binary, work_dir="/tmp/testwork", afl_count=2, create_dictionary=True, resume=False,
+    afl = phuzzer.AFL(binary, work_dir="/tmp/testwork", afl_count=2, create_dictionary=True, resume=False,
                       timeout=timeout_value)
 
     afl.start()
@@ -46,7 +46,7 @@ def test_dictionary_creation_cgc():
     """
 
     binary = os.path.join(bin_location, "tests/cgc/ccf3d301_01")
-    afl = phuzzer.phuzzers.AFL(binary, create_dictionary=True, resume=False)
+    afl = phuzzer.AFL(binary, create_dictionary=True, resume=False)
     assert len(afl.dictionary) >= 60
     assert not os.path.exists(afl.dictionary_file)
     afl.start()
