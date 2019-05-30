@@ -1,4 +1,4 @@
-
+from . import Phuzzer
 from ..util import hexescape
 from ..errors import InstallError
 from collections import defaultdict
@@ -14,7 +14,7 @@ import os
 l = logging.getLogger("phuzzer.phuzzers.afl")
 l.setLevel(logging.DEBUG)
 
-from . import Phuzzer
+
 class AFL(Phuzzer):
     """ Phuzzer object, spins up a fuzzing job on a binary """
 
