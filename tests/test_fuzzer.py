@@ -1,7 +1,6 @@
 from os.path import join
 import time
 import phuzzer
-import sys
 import logging
 l = logging.getLogger("fuzzer.tests.test_fuzzer")
 l.setLevel(logging.DEBUG)
