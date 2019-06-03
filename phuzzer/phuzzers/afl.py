@@ -451,4 +451,3 @@ class AFL(Phuzzer):
 
         # return the AFL path
         return shellphish_afl.afl_bin(target_os)
-
