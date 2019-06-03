@@ -15,7 +15,6 @@ def test_parallel_execution():
     """
     test parallel execution, summary stats, and the timed_out method of Phuzzer
     """
-    l.info("PARALLEL_EXEC: Starting parallel test, using {} in python {}".format(phuzzer.__file__, repr(sys.version)))
 
     timeout_value = 5
     binary = os.path.join(bin_location, "tests/cgc/ccf3d301_01")
