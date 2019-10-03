@@ -23,7 +23,7 @@ class AFL(Phuzzer):
         work_dir=None, seeds_dir=None, resume=False,
         afl_count=1, memory="8G", timeout=None,
         library_path=None, target_opts=None, extra_opts=None,
-        crash_mode=False, use_qemu=True,
+        crash_mode=False, use_qemu=True, fuzzer_name="fuzzer-master",
         run_timeout=None
     ):
         """
@@ -53,8 +53,9 @@ class AFL(Phuzzer):
             self.in_dir = "-"
         else:
             l.info("could resume, but starting over upon request")
-            with contextlib.suppress(FileNotFoundError):
-                shutil.rmtree(self.work_dir)
+            if fuzzer_name == "fuzzer-master":
+                with contextlib.suppress(FileNotFoundError):
+                    shutil.rmtree(self.work_dir)
             self.in_dir = seeds_dir or os.path.join(self.work_dir, "initial_seeds")
             with contextlib.suppress(FileExistsError):
                 os.makedirs(self.in_dir)
