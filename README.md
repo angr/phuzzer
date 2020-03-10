@@ -14,14 +14,16 @@ First, here's a probably-incomplete list of debian packages that might be useful
     sudo apt-get install build-essential gcc-multilib libtool automake autoconf bison debootstrap debian-archive-keyring libtool-bin
     sudo apt-get build-dep qemu
 
-Then, the fuzzer also depends on `shellphish-afl`, which is a pip package that actually includes AFL:
+Then, the fuzzer also depends on a few modules: `shellphish-afl`, `driller` and `tracer`.
 
     pip install git+https://github.com/shellphish/shellphish-afl
+    pip install git+https://github.com/shellphish/driller
+    pip install git+https://github.com/angr/tracer
     
 That'll pull a ton of other stuff, compile qemu about 4 times, and set everything up.
 Then, install this fuzzer wrapper:
 
-    pip install git+https://github.com/shellphish/fuzzer
+    pip install git+https://github.com/angr/phuzzer
 
 ## Usage
 
