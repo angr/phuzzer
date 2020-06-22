@@ -6,3 +6,9 @@
 /bin/afl-cgc/
 /bin/afl-unix/
 /bin/fuzzer-libs/
+.idea/deployment.xml
+.idea/misc.xml
+.idea/modules.xml
+.idea/phuzzer.iml
+.idea/vcs.xml
+.idea/workspace.xml

@@ -1,18 +1,18 @@
-from . import Phuzzer
-from ..util import hexescape
-from ..errors import InstallError
 from collections import defaultdict
-import shellphish_afl
+from ..errors import InstallError
+from ..util import hexescape
+from . import Phuzzer
+import pkg_resources
 import subprocess
 import contextlib
 import logging
 import signal
 import shutil
-import angr
 import os
 
+
 l = logging.getLogger("phuzzer.phuzzers.afl")
-l.setLevel(logging.DEBUG)
+l.setLevel(logging.INFO)
 
 
 class AFL(Phuzzer):
@@ -27,7 +27,7 @@ class AFL(Phuzzer):
         run_timeout=None
     ):
         """
-        :param binary_path: path to the binary to fuzz. List or tuple for multi-CB.
+        :param target: path to the binary to fuzz. List or tuple for multi-CB.
         :param seeds: list of inputs to seed fuzzing with
         :param dictionary: a list of bytes objects to seed the dictionary with
         :param create_dictionary: create a dictionary from the string references in the binary
@@ -45,8 +45,11 @@ class AFL(Phuzzer):
 
         :param crash_mode: if set to True AFL is set to crash explorer mode, and seed will be expected to be a crashing input
         :param use_qemu: Utilize QEMU for instrumentation of binary.
+
+        :param run_timeout: amount of time for AFL to wait for a single execution to finish
+
         """
-        super().__init__(target, seeds=seeds, dictionary=dictionary, create_dictionary=create_dictionary, timeout=timeout)
+        super().__init__(target=target, seeds=seeds, dictionary=dictionary, create_dictionary=create_dictionary, timeout=timeout)
 
         self.work_dir = work_dir or os.path.join("/tmp", "phuzzer", os.path.basename(str(target)))
         if resume and os.path.isdir(self.work_dir):
@@ -78,7 +81,7 @@ class AFL(Phuzzer):
             l.info("AFL will be started in crash mode")
 
         # set up the paths
-        self.afl_path = self.choose_afl()
+        self.afl_phuzzer_bin_path = self.choose_afl()
 
     #
     # Overrides
@@ -123,6 +126,8 @@ class AFL(Phuzzer):
         if self.dictionary:
             with open(self.dictionary_file, "w") as df:
                 for i,s in enumerate(set(self.dictionary)):
+                    if len(s) == 0:
+                        continue
                     s_val = hexescape(s)
                     df.write("string_%d=\"%s\"" % (i, s_val) + "\n")
 
@@ -140,8 +145,8 @@ class AFL(Phuzzer):
         self.processes.append(master)
 
         # only spins up an AFL instances if afl_count > 1
-        for _ in range(1, self.afl_count):
-            self.processes.append(self._start_afl_instance())
+        for i in range(1, self.afl_count):
+            self.processes.append(self._start_afl_instance(i))
 
         return self
 
@@ -168,7 +173,10 @@ class AFL(Phuzzer):
             for fstat, value in fuzzstats.items():
                 try:
                     fvalue = float(value)
-                    summary_stats[fstat] += fvalue
+                    if fstat == "paths_total":
+                        summary_stats[fstat] = max(summary_stats[fstat], int(fvalue))
+                    else:
+                        summary_stats[fstat] += fvalue
                 except ValueError:
                     pass
         return summary_stats
@@ -188,7 +196,18 @@ class AFL(Phuzzer):
                         stat_blob = f.read()
                         stat_lines = stat_blob.split("\n")[:-1]
                         for stat in stat_lines:
-                            key, val = stat.split(":")
+                            if ":" in stat:
+                                try:
+
+                                    key, val = stat.split(":")
+                                except :
+                                    index = stat.find(":")
+                                    key = stat[:index]
+                                    val = stat[index+1:]
+
+                            else:
+                                print(f"Skipping stat '${stat}' in \n${stat_lines} because no split value")
+                                continue
                             stats[fuzzer_dir][key.strip()] = val.strip()
 
         return stats
@@ -358,13 +377,12 @@ class AFL(Phuzzer):
 
             pollen_cnt += 1
 
+
     #
     # AFL launchers
     #
-
-    def _start_afl_instance(self):
-
-        args = [self.afl_path]
+    def build_args(self):
+        args = [self.afl_phuzzer_bin_path]
 
         args += ["-i", self.in_dir]
         args += ["-o", self.work_dir]
@@ -392,62 +410,77 @@ class AFL(Phuzzer):
             args += ["-t", "%d+" % self.run_timeout]
         args += ["--"]
         args += [self.target]
-        args += self.target_opts
+        target_opts = []
 
-        with open(os.path.join(self.work_dir, fuzzer_id+".cmd"), "w") as cf:
-            cf.write(" ".join(args) + "\n")
+        for op in self.target_opts:
+            target_opts.append(op.replace("~~", "--"))
+
+        args += target_opts
+
+        return args, fuzzer_id
+
+    def _start_afl_instance(self, instance_cnt=0):
+
+        args, fuzzer_id = self.build_args()
+
+        my_env = os.environ.copy()
+
+        self.log_command(args, fuzzer_id, my_env)
 
         logpath = os.path.join(self.work_dir, fuzzer_id + ".log")
         l.debug("execing: %s > %s", ' '.join(args), logpath)
+
         with open(logpath, "w") as fp:
-            return subprocess.Popen(args, stdout=fp, stderr=fp, close_fds=True)
+            return subprocess.Popen(args, stdout=fp, stderr=fp, close_fds=True, env=my_env)
+
+    def log_command(self, args, fuzzer_id, my_env):
+        with open(os.path.join(self.work_dir, fuzzer_id + ".cmd"), "w") as cf:
+            cf.write(" ".join(args) + "\n")
+            listvars = [f"{k}={v}" for k, v in my_env.items()]
+            listvars.sort()
+            cf.write("\n" + "\n".join(listvars))
 
     def choose_afl(self):
         """
         Chooses the right AFL and sets up some environment.
         """
 
-        # set up the AFL path
-        p = angr.Project(self.target)
-        target_os = p.loader.main_object.os
-        afl_dir = shellphish_afl.afl_dir(target_os)
+        afl_dir, qemu_arch_name = Phuzzer.init_afl_config(self.target)
 
-        if target_os == 'cgc':
-            afl_path_var = shellphish_afl.afl_path_var('cgc')
-        else:
-            afl_path_var = shellphish_afl.afl_path_var(p.arch.qemu_name)
-            directory = None
-            if p.arch.qemu_name == "aarch64":
-                directory = "arm64"
-            if p.arch.qemu_name == "i386":
-                directory = "i386"
-            if p.arch.qemu_name == "x86_64":
-                directory = "x86_64"
-            if p.arch.qemu_name == "mips":
-                directory = "mips"
-            if p.arch.qemu_name == "mipsel":
-                directory = "mipsel"
-            if p.arch.qemu_name == "ppc":
-                directory = "powerpc"
-            if p.arch.qemu_name == "arm":
-                # some stuff qira uses to determine the which libs to use for arm
-                with open(self.target, "rb") as f:
-                    progdata = f.read(0x800)
-                if "/lib/ld-linux.so.3" in progdata:
-                    directory = "armel"
-                elif "/lib/ld-linux-armhf.so.3" in progdata:
-                    directory = "armhf"
+        directory = None
+        if qemu_arch_name == "aarch64":
+            directory = "arm64"
+        if qemu_arch_name == "i386":
+            directory = "i386"
+        if qemu_arch_name == "x86_64":
+            directory = "x86_64"
+        if qemu_arch_name == "mips":
+            directory = "mips"
+        if qemu_arch_name == "mipsel":
+            directory = "mipsel"
+        if qemu_arch_name == "ppc":
+            directory = "powerpc"
+        if qemu_arch_name == "arm":
+            # some stuff qira uses to determine the which libs to use for arm
+            with open(self.target, "rb") as f:
+                progdata = f.read(0x800)
+            if b"/lib/ld-linux.so.3" in progdata:
+                directory = "armel"
+            elif b"/lib/ld-linux-armhf.so.3" in progdata:
+                directory = "armhf"
 
-            if directory is None:
-                l.warning("architecture \"%s\" has no installed libraries", p.arch.qemu_name)
-            else:
-                libpath = os.path.join(afl_dir, "..", "fuzzer-libs", directory)
+        if directory is None and qemu_arch_name != "":
+            l.warning("architecture \"%s\" has no installed libraries", qemu_arch_name)
+        elif directory is not None:
+            libpath = os.path.join(afl_dir, "..", "fuzzer-libs", directory)
 
-                l.debug("exporting QEMU_LD_PREFIX of '%s'", libpath)
-                os.environ['QEMU_LD_PREFIX'] = libpath
-
-        # set environment variable for the AFL_PATH
-        os.environ['AFL_PATH'] = afl_path_var
+            l.debug("exporting QEMU_LD_PREFIX of '%s'", libpath)
+            os.environ['QEMU_LD_PREFIX'] = libpath
 
         # return the AFL path
-        return shellphish_afl.afl_bin(target_os)
+        # import ipdb
+        # ipdb.set_trace()
+        afl_bin = os.path.join(afl_dir, "afl-fuzz")
+        print(f"afl_bin={afl_bin}")
+        return afl_bin
+

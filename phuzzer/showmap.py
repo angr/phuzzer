@@ -1,12 +1,12 @@
 import os
-import angr
 import shutil
+import logging
 import tempfile
 import subprocess
-import shellphish_afl
+from .phuzzers import Phuzzer
 
-import logging
 l = logging.getLogger("phuzzer.Showmap")
+
 
 class Showmap:
     """Show map"""
@@ -45,21 +45,12 @@ class Showmap:
         # will be set by showmap's return code
         self.causes_crash = False
 
-        AFL.check_environment()
-
-        # unfortunately here is some code reuse between Phuzzer and Minimizer (and Showmap!)
-        p = angr.Project(self.binaries[0])
-        tracer_id = 'cgc' if p.loader.main_object.os == 'cgc' else p.arch.qemu_name
-        if self.is_multicb:
-            tracer_id = 'multi-{}'.format(tracer_id)
-
-        self.showmap_path = os.path.join(shellphish_afl.afl_dir(tracer_id), "afl-showmap")
-        self.afl_path_var = shellphish_afl.afl_path_var(tracer_id)
+        Phuzzer.check_environment()
+        afl_dir, _ = Phuzzer.init_afl_config(self.binaries[0])
+        self.showmap_path = os.path.join(afl_dir, "afl-showmap")
 
         l.debug("showmap_path: %s", self.showmap_path)
         l.debug("afl_path_var: %s", self.afl_path_var)
-
-        os.environ['AFL_PATH'] = self.afl_path_var
 
         # create temp
         self.work_dir = tempfile.mkdtemp(prefix='showmap-', dir='/tmp/')
@@ -124,4 +115,3 @@ class Showmap:
         with open(outfile, "w") as fp, open(self.input_testcase, 'rb') as it, open("/dev/null", 'wb') as devnull:
             return subprocess.Popen(args, stdin=it, stdout=devnull, stderr=fp, close_fds=True)
 
-from .phuzzers import AFL

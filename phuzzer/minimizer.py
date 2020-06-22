@@ -1,9 +1,9 @@
 import os
-import angr
 import shutil
 import tempfile
 import subprocess
-import shellphish_afl
+from .phuzzers import Phuzzer
+from .phuzzers.afl import AFL
 
 import logging
 l = logging.getLogger("phuzzer.Minimizer")
@@ -22,16 +22,8 @@ class Minimizer:
 
         AFL.check_environment()
 
-        # unfortunately here is some code reuse between Phuzzer and Minimizer
-        p = angr.Project(self.binary_path)
-        tracer_id = 'cgc' if p.loader.main_object.os == 'cgc' else p.arch.qemu_name
-        self.tmin_path = os.path.join(shellphish_afl.afl_dir(tracer_id), "afl-tmin")
-        self.afl_path_var = shellphish_afl.afl_path_var(tracer_id)
-
-        l.debug("tmin_path: %s", self.tmin_path)
-        l.debug("afl_path_var: %s", self.afl_path_var)
-
-        os.environ['AFL_PATH'] = self.afl_path_var
+        afl_dir, _ = AFL.init_afl_config(binary_path)
+        self.tmin_path = os.path.join(afl_dir, "afl-tmin")
 
         # create temp
         self.work_dir = tempfile.mkdtemp(prefix='tmin-', dir='/tmp/')
@@ -51,14 +43,21 @@ class Minimizer:
 
     def __del__(self):
         if not self._removed:
+            import traceback
+            traceback.print_stack()
             shutil.rmtree(self.work_dir)
 
     def minimize(self):
         """Start minimizing"""
 
         self._start_minimizer().wait()
+        if os.path.isfile(self.output_testcase):
+            with open(self.output_testcase, 'rb') as f:
+                result = f.read()
+        else:
+            print(open(self.errlog, "r").read())
+            raise ValueError(f"minized version not created see error output above {self.output_testcase} ")
 
-        with open(self.output_testcase, 'rb') as f: result = f.read()
 
         shutil.rmtree(self.work_dir)
         self._removed = True
@@ -81,8 +80,7 @@ class Minimizer:
 
         l.debug("execing: %s > %s", " ".join(args), outfile)
 
-        outfile = os.path.join(self.work_dir, outfile)
-        with open(outfile, "wb") as fp:
-            return subprocess.Popen(args, stderr=fp)
+        self.errlog = os.path.join(self.work_dir, outfile)
 
-from .phuzzers import AFL
+        with open(self.errlog, "wb") as fp:
+            return subprocess.Popen(args, stderr=fp)
