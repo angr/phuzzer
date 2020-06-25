@@ -1,3 +1,0 @@
-angr
-shellphish-qemu
-shellphish-afl
