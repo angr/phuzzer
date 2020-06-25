@@ -90,6 +90,7 @@ class Phuzzer:
     def timed_out(self):
         if self.timeout is None:
             return False
+
         return time.time() - self.start_time > self.timeout
 
     def start(self):

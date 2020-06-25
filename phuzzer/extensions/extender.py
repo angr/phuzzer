@@ -5,7 +5,6 @@ import random
 import struct
 import tempfile
 import subprocess
-import shellphish_qemu
 
 from ..showmap import Showmap
 
@@ -100,6 +99,7 @@ class Extender(object):
         return None
 
     def _run_qemu(self, payload, args=None):
+        import shellphish_qemu
 
         qemu_path = shellphish_qemu.qemu_path("cgc-tracer")
 

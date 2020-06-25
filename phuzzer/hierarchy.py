@@ -5,7 +5,6 @@ import glob
 import logging
 import networkx
 import subprocess
-import shellphish_qemu
 
 l = logging.getLogger('fuzzer.input_hierarchy')
 
@@ -179,6 +178,7 @@ class Input(object):
 
     @property
     def output(self):
+        import shellphish_qemu
         with open('/dev/null', 'w') as tf, open(self.filepath) as sf:
             cmd_args = [
                 'timeout', '60', shellphish_qemu.qemu_path('cgc-tracer'),
@@ -191,6 +191,7 @@ class Input(object):
 
     @property
     def trace(self):
+        import shellphish_qemu
         if self._trace is not None:
             return self._trace
 
