@@ -1,2 +1,5 @@
 tqdm
+angr
+shellphish-qemu
+shellphish-afl
 
