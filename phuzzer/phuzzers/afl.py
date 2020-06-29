@@ -413,7 +413,7 @@ class AFL(Phuzzer):
         target_opts = []
 
         for op in self.target_opts:
-            target_opts.append(op.replace("~~", "--"))
+            target_opts.append(op.replace("~~", "--").replace("~","-"))
 
         args += target_opts
 
