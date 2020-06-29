@@ -111,7 +111,7 @@ def main():
                               target=args.binary, work_dir=args.work_dir, seeds=seeds, afl_count=args.afl_cores,
                               create_dictionary=not args.no_dictionary, timeout=args.timeout,
                               memory=args.memory, run_timeout=args.run_timeout, dictionary=built_dict, use_qemu=args.use_qemu,
-                              resume=args.resume, crash_mode=args.first_crash, target_opts=args.target_opts
+                              resume=args.resume, target_opts=args.target_opts
                               )
 
     # start it!
