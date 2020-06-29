@@ -1,10 +1,12 @@
 import distutils.spawn #pylint:disable=no-name-in-module,import-error
+import pkg_resources
 import subprocess
 import logging
 import signal
 import time
 import sys
 import os
+import re
 l = logging.getLogger("phuzzer.phuzzers")
 
 
@@ -121,7 +123,9 @@ class Phuzzer:
         if "AFL_PATH" in os.environ:
             Phuzzer.afl_bin_dir = os.environ["AFL_PATH"]
         else:
-
+            installed = {pkg.key for pkg in pkg_resources.working_set}
+            if "angr" not in installed or "shellphish_afl" not in installed :
+                raise ModuleNotFoundError("If AFL_PATH is not specified then the modules 'angr' and 'shellphish_afl' must be installed")
             import angr
             import shellphish_afl
             try:
@@ -209,8 +213,33 @@ class Phuzzer:
     #
     # Dictionary creation
     #
-
     def create_dictionary(self):
+        installed = {pkg.key for pkg in pkg_resources.working_set}
+        if "angr" in installed:
+            return self.create_dictionary_angr()
+        elif "elftools" in installed:
+            return self.create_dictionary_elftools()
+        else:
+            raise ModuleNotFoundError("Cannot create a dictionary without angr or elftools being installed")
+
+    def create_dictionary_elftools(self):
+        from elftools.elf.elffile import ELFFile
+        MAX = 120
+        strings = set()
+        with open(self.target, 'rb') as f:
+            elf = ELFFile(f)
+
+            for sec in elf.iter_sections():
+                if sec.name not in {'.rodata'}:
+                    continue
+                for match in re.findall(b"[a-zA-Z0-9_]{4}[a-zA-Z0-9_]*", sec.data()):
+                    t = match.decode()
+                    for i in range(0, len(t), MAX):
+                        strings.add(t[i:i + MAX])
+        return strings
+
+    def create_dictionary_angr(self):
+
         l.warning("creating a dictionary of string references within target \"%s\"", self.target)
         import angr
 

@@ -9,6 +9,8 @@ import subprocess
 from ..showmap import Showmap
 
 import logging
+import pkg_resources
+
 l = logging.getLogger("fuzzer.extensions.Extender")
 
 class Extender(object):
@@ -99,6 +101,9 @@ class Extender(object):
         return None
 
     def _run_qemu(self, payload, args=None):
+        installed = {pkg.key for pkg in pkg_resources.working_set}
+        if "shellphish_qemu" not in installed:
+            raise ModuleNotFoundError("Phuzzer's Extender requires 'shellphish_qemu' to be instazlled ")
         import shellphish_qemu
 
         qemu_path = shellphish_qemu.qemu_path("cgc-tracer")
