@@ -1,5 +1,4 @@
 import distutils.spawn #pylint:disable=no-name-in-module,import-error
-import pkg_resources
 import subprocess
 import logging
 import signal
@@ -123,11 +122,16 @@ class Phuzzer:
         if "AFL_PATH" in os.environ:
             Phuzzer.afl_bin_dir = os.environ["AFL_PATH"]
         else:
-            installed = {pkg.key for pkg in pkg_resources.working_set}
-            if "angr" not in installed or "shellphish_afl" not in installed :
-                raise ModuleNotFoundError("If AFL_PATH is not specified then the modules 'angr' and 'shellphish_afl' must be installed")
-            import angr
-            import shellphish_afl
+
+            try:
+                import angr
+            except ImportError:
+                raise ModuleNotFoundError("AFL_PATH was found in enviornment variables and angr is not installed.")
+            try:
+                import shellphish_afl
+            except ImportError:
+                raise ModuleNotFoundError(
+                    "AFL_PATH was found in enviornment variables and either shellphish_afl is not installed.")
             try:
                 p = angr.Project(binary_path)
                 Phuzzer.qemu_arch_name = p.arch.qemu_name
@@ -214,13 +218,13 @@ class Phuzzer:
     # Dictionary creation
     #
     def create_dictionary(self):
-        installed = {pkg.key for pkg in pkg_resources.working_set}
-        if "angr" in installed:
-            return self.create_dictionary_angr()
-        elif "elftools" in installed:
-            return self.create_dictionary_elftools()
-        else:
-            raise ModuleNotFoundError("Cannot create a dictionary without angr or elftools being installed")
+        try:
+            import angr
+        except ImportError:
+            try:
+                import elftools
+            except ImportError:
+                raise ModuleNotFoundError("Cannot create a dictionary without angr or elftools being installed")
 
     def create_dictionary_elftools(self):
         from elftools.elf.elffile import ELFFile

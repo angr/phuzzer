@@ -12,11 +12,10 @@ import time
 import imp
 import os
 
-installed = {pkg.key for pkg in pkg_resources.working_set}
-if "driller" in installed:
-    DRILLER_EXISTS=True
+try:
     import driller
-else:
+    DRILLER_EXISTS = True
+except ImportError:
     DRILLER_EXISTS=False
 
 from . import GreaseCallback
