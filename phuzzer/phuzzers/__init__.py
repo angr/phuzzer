@@ -220,11 +220,11 @@ class Phuzzer:
     def create_dictionary(self):
         try:
             import angr
-            self.create_dictionary_angr()
+            return self.create_dictionary_angr()
         except ImportError:
             try:
                 import elftools
-                self.create_dictionary_elftools()
+                return self.create_dictionary_elftools()
             except ImportError:
                 raise ModuleNotFoundError("Cannot create a dictionary without angr or elftools being installed")
 
