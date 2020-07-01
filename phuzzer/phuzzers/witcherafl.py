@@ -9,7 +9,6 @@ import subprocess
 import shutil
 import time
 import stat
-import random
 import glob
 import logging
 import urllib.request
@@ -111,14 +110,16 @@ class WitcherAFL(AFL):
             return subprocess.Popen(args, stdout=fp, stderr=fp, close_fds=True, env=my_env)
 
     def _check_for_authorized_response(self, body, headers, loginconfig):
-        return self._check_body(body, loginconfig) and self._check_headers(headers, loginconfig)
+        return WitcherAFL._check_body(body, loginconfig) and WitcherAFL._check_headers(headers, loginconfig)
 
+    @staticmethod
     def _check_body(self, body, loginconfig):
         if "positiveBody" in loginconfig and len(loginconfig["positiveBody"]) > 1:
             pattern = re.compile(loginconfig["positiveBody"])
             return pattern.search(body) is None
         return True
 
+    @staticmethod
     def _check_headers(self, headers, loginconfig):
         if "postiveHeaders" in loginconfig:
             posHeaders = loginconfig["positiveHeaders"]
@@ -189,13 +190,10 @@ class WitcherAFL(AFL):
         return authdata
 
     def _do_local_cgi_req_login(self, loginconfig):
-        arr_cookies = []
-        bearer = ""
 
         login_cmd = [loginconfig["cgiBinary"]]
 
         # print("[WC] \033[34m starting with command " + str(login_cmd) + "\033[0m")
-        str_setup_info = ""
         myenv = os.environ.copy()
         if "AFL_BASE" in myenv:
             del myenv["AFL_BASE"]
@@ -284,6 +282,7 @@ class WitcherAFL(AFL):
 
         return self._extract_authdata(headers, loginconfig)
 
+    @staticmethod
     def _do_authorized_requests(self, loginconfig, authdata):
         extra_requests = loginconfig["extra_authorized_requests"] if "postData" in loginconfig else []
 
@@ -301,7 +300,7 @@ class WitcherAFL(AFL):
                 adname = adname.replace("LOGIN_COOKIE","Cookie")
                 req_headers[adname] = advalue
                 req = urllib.request.Request(url, post_data, req_headers)
-                response = urllib.request.urlopen(req)
+                urllib.request.urlopen(req)
 
     def _get_login(self, my_env):
         if self.login_json_fn == "":
@@ -323,13 +322,11 @@ class WitcherAFL(AFL):
             my_env["LOGIN_COOKIE"] = f"{saved_session_name}:{saved_session_id}"
             return
 
-        found = False
-        result = ""
         authdata = None
         for _ in range(0, 10):
             if loginconfig["url"].startswith("http"):
                 authdata = self._do_http_req_login(loginconfig)
-                self._do_authorized_requests(loginconfig, authdata)
+                WitcherAFL._do_authorized_requests(loginconfig, authdata)
             else:
                 authdata = self._do_local_cgi_req_login(loginconfig)
             if authdata is not None:

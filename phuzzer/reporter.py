@@ -1,8 +1,10 @@
+import os
 import time
 import glob
-import os
-from collections import defaultdict
+import datetime
+import traceback
 from threading import Thread
+from collections import defaultdict
 
 
 class Reporter(Thread):
@@ -15,19 +17,17 @@ class Reporter(Thread):
         self.afl_cores = afl_cores
         self.first_crash = first_crash
         self.timeout = timeout
-
+        self.timeout_seen = False
         self.work_dir = work_dir
 
         self.details_fn = f"{reportdir}/run_details.txt"
         self.summary_fn = f"{reportdir}/run_summary.txt"
 
         if not os.path.exists(self.details_fn):
-            open(self.details_fn, "w").write(
-                f'Date\tTime\tBinary\tTarget\tElapsed\tCores\tExecs\tExec/sec\tCycles\tPaths\tCrashes\tReason\tTestVer\n')
+            open(self.details_fn, "w").write('Date\tTime\tBinary\tTarget\tElapsed\tCores\tExecs\tExec/sec\tCycles\tPaths\tCrashes\tReason\tTestVer\n')
 
         if not os.path.exists(self.summary_fn):
-            open(self.summary_fn, "w").write(
-                f'Date\tTime\tBinary\tTarget\tElapsed\tCores\tExecs\tExec/sec\tCycles\tPaths\tCrashes\tReason\tTestVer\n')
+            open(self.summary_fn, "w").write('Date\tTime\tBinary\tTarget\tElapsed\tCores\tExecs\tExec/sec\tCycles\tPaths\tCrashes\tReason\tTestVer\n')
 
         self.start_time = time.time()
         self.statement_cnt = 0
@@ -51,7 +51,6 @@ class Reporter(Thread):
         while self.keepgoing:
             self.generate_report_line()
             time.sleep(1)
-            pass
 
     def enable_printing(self):
         self.do_printing = True
@@ -63,7 +62,7 @@ class Reporter(Thread):
             for fstat, value in fuzzstats.items():
                 try:
                     fvalue = float(value)
-                    if fstat == "paths_total" or fstat == "unique_crashes":
+                    if fstat in ('paths_total', 'unique_crashes'):
                         summary_stats[fstat] = max(summary_stats[fstat], int(fvalue))
                     else:
                         summary_stats[fstat] += int(fvalue)
@@ -87,7 +86,7 @@ class Reporter(Thread):
                                 if ":" in stat:
                                     try:
                                         key, val = stat.split(":")
-                                    except:
+                                    except Exception as ex:
                                         index = stat.find(":")
                                         key = stat[:index]
                                         val = stat[index + 1:]
@@ -98,7 +97,6 @@ class Reporter(Thread):
                                     self.stats[fuzzer_dir][key.strip()] = val.strip()
                                 except KeyError as ke:
                                     print(ke)
-                                    import traceback
                                     traceback.format_exc()
                                     print(self.stats.keys())
 
@@ -109,7 +107,6 @@ class Reporter(Thread):
                         self.stats[fuzzer_dir]["paths_total"] = len(glob.glob(fuzz_q_mask))
                     except KeyError as ke:
                         print(ke)
-                        import traceback
                         traceback.format_exc()
                         print(self.stats.keys())
 
@@ -146,8 +143,6 @@ class Reporter(Thread):
         self.get_fuzzer_stats()
         self.summarize_stats()
 
-        run_until_str = ""
-        timeout_str = ""
         self.build_report_stats()
         self.statement_cnt += 1
         if self.statement_cnt % Reporter.DETAIL_FREQ == 0 or mandatory_record:
@@ -157,11 +152,7 @@ class Reporter(Thread):
         if self.do_printing:
             self.print_details(mandatory_record)
 
-
     def build_report_stats(self, end_reason=""):
-
-        import datetime, os
-        version = ""
 
         dt = datetime.datetime.now()
         binary_version = self.binary.replace("/p/webcam/php/", "").replace("/sapi/cgi/php-cgi", "")
@@ -200,6 +191,3 @@ class Reporter(Thread):
         self.generate_report_line(mandatory_record=True)
 
         self.save_summary_line(end_reason)
-
-
-

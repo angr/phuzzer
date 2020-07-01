@@ -3,7 +3,7 @@ import shutil
 import logging
 import tempfile
 import subprocess
-from .phuzzers import Phuzzer
+from .phuzzers.afl import AFL
 
 l = logging.getLogger("phuzzer.Showmap")
 
@@ -45,7 +45,7 @@ class Showmap:
         # will be set by showmap's return code
         self.causes_crash = False
 
-        Phuzzer.check_environment()
+        AFL.check_environment()
         afl_dir, _ = Phuzzer.init_afl_config(self.binaries[0])
         self.showmap_path = os.path.join(afl_dir, "afl-showmap")
 
@@ -114,4 +114,3 @@ class Showmap:
         outfile = os.path.join(self.work_dir, outfile)
         with open(outfile, "w") as fp, open(self.input_testcase, 'rb') as it, open("/dev/null", 'wb') as devnull:
             return subprocess.Popen(args, stdin=it, stdout=devnull, stderr=fp, close_fds=True)
-

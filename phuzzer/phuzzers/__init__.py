@@ -1,11 +1,29 @@
 import distutils.spawn #pylint:disable=no-name-in-module,import-error
 import subprocess
+import traceback
 import logging
 import signal
 import time
 import sys
 import os
 import re
+try:
+    import angr
+    ANGR_INSTALLED = True
+except ImportError:
+    ANGR_INSTALLED = False
+try:
+    import shellphish_afl
+    SHELLPHISH_AFL_INSTALLED = True
+except ImportError:
+    SHELLPHISH_AFL_INSTALLED = False
+try:
+    import elftools
+    ELFTOOLS_INSTALLED = True
+except ImportError:
+    ELFTOOLS_INSTALLED = False
+
+
 l = logging.getLogger("phuzzer.phuzzers")
 
 
@@ -123,13 +141,9 @@ class Phuzzer:
             Phuzzer.afl_bin_dir = os.environ["AFL_PATH"]
         else:
 
-            try:
-                import angr
-            except ImportError:
+            if not ANGR_INSTALLED:
                 raise ModuleNotFoundError("AFL_PATH was found in enviornment variables and angr is not installed.")
-            try:
-                import shellphish_afl
-            except ImportError:
+            if not SHELLPHISH_AFL_INSTALLED:
                 raise ModuleNotFoundError(
                     "AFL_PATH was found in enviornment variables and either shellphish_afl is not installed.")
             try:
@@ -146,7 +160,7 @@ class Phuzzer:
                 print(f"afl_dir {Phuzzer.afl_bin_dir}")
 
             except Exception as ex:
-                import traceback
+
                 traceback.format_exc()
                 raise ModuleNotFoundError("AFL_PATH was found in enviornment variables and "
                                           "either angr or shellphish_afl is not installed.")
@@ -218,15 +232,12 @@ class Phuzzer:
     # Dictionary creation
     #
     def create_dictionary(self):
-        try:
-            import angr
+        if ANGR_INSTALLED:
             return self.create_dictionary_angr()
-        except ImportError:
-            try:
-                import elftools
-                return self.create_dictionary_elftools()
-            except ImportError:
-                raise ModuleNotFoundError("Cannot create a dictionary without angr or elftools being installed")
+        elif ELFTOOLS_INSTALLED:
+            return self.create_dictionary_elftools()
+        else:
+            raise ModuleNotFoundError("Cannot create a dictionary without angr or elftools being installed")
 
     def create_dictionary_elftools(self):
         from elftools.elf.elffile import ELFFile
@@ -247,7 +258,6 @@ class Phuzzer:
     def create_dictionary_angr(self):
 
         l.warning("creating a dictionary of string references within target \"%s\"", self.target)
-        import angr
 
         b = angr.Project(self.target, load_options={'auto_load_libs': False})
         cfg = b.analyses.CFG(resolve_indirect_jumps=True, collect_data_references=True)

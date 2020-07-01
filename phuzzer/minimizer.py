@@ -41,6 +41,8 @@ class Minimizer:
         with open(self.input_testcase, 'wb') as f:
             f.write(testcase)
 
+        self.errlog = ""
+
     def __del__(self):
         if not self._removed:
             import traceback

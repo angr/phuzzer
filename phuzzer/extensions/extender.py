@@ -5,14 +5,19 @@ import random
 import struct
 import tempfile
 import subprocess
-
 from ..showmap import Showmap
-
 import logging
+
+try:
+    import shellphish_qemu
+    SHELLPHISH_QEMU = True
+except ImportError:
+    SHELLPHISH_QEMU = False
 
 l = logging.getLogger("fuzzer.extensions.Extender")
 
-class Extender(object):
+
+class Extender:
 
     def __init__(self, binary, sync_dir):
 
@@ -100,11 +105,8 @@ class Extender(object):
         return None
 
     def _run_qemu(self, payload, args=None):
-        try:
-            import shellphish_qemu
-        except ImportError:
+        if not SHELLPHISH_QEMU:
             raise ModuleNotFoundError("Phuzzer's Extender requires 'shellphish-qemu' to be installed ")
-
 
         qemu_path = shellphish_qemu.qemu_path("cgc-tracer")
 
