@@ -1,9 +1,11 @@
+import logging
 import os
 import shutil
-import logging
-import tempfile
 import subprocess
-from .phuzzers.afl import AFL
+import tempfile
+
+from phuzzer.phuzzers import Phuzzer
+from phuzzer.phuzzers.afl import AFL
 
 l = logging.getLogger("phuzzer.Showmap")
 
