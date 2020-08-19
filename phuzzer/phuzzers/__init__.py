@@ -1,18 +1,40 @@
-import shellphish_afl
-import subprocess
 import distutils.spawn #pylint:disable=no-name-in-module,import-error
+import subprocess
+import traceback
 import logging
 import signal
-import shutil
 import time
-import angr
 import sys
 import os
+import re
+try:
+    import angr
+    ANGR_INSTALLED = True
+except ImportError:
+    ANGR_INSTALLED = False
+try:
+    import shellphish_afl
+    SHELLPHISH_AFL_INSTALLED = True
+except ImportError:
+    SHELLPHISH_AFL_INSTALLED = False
+try:
+    import elftools
+    ELFTOOLS_INSTALLED = True
+except ImportError:
+    ELFTOOLS_INSTALLED = False
+
 
 l = logging.getLogger("phuzzer.phuzzers")
 
+
 class Phuzzer:
     """ Phuzzer object, spins up a fuzzing job on a binary """
+
+    AFL_MULTICB = "AFLMULTICB"
+    WITCHER_AFL = "WITCHERAFL"
+    AFL = "AFL"
+    qemu_arch_name = ""
+    afl_bin_dir = None
 
     def __init__(self, target, seeds=None, dictionary=None, create_dictionary=False, timeout=None):
         """
@@ -20,9 +42,12 @@ class Phuzzer:
         :param seeds: list of inputs to seed fuzzing with
         :param dictionary: a list of bytes objects to seed the dictionary with
         :param create_dictionary: create a dictionary from the string references in the binary
+        :param timeout: duration to run fuzzing session
         """
 
         self.target = target
+        self.target_os = ""
+        self.target_qemu_arch = ""
         self.seeds = seeds or [ ]
 
         # processes spun up
@@ -36,6 +61,32 @@ class Phuzzer:
 
         # token dictionary
         self.dictionary = dictionary or (self.create_dictionary() if create_dictionary else [])
+
+    @staticmethod
+    def phactory(*args, **kwargs):
+        if len(args) < 1 and 'phuzzer_type' not in kwargs:
+            raise TypeError("The phactory() requires 'type' argument")
+        if len(args) > 1:
+            raise TypeError("The phactory() allows only 1 positional argument")
+
+        if len(args) == 1:
+            classtype = args[0]
+        else:
+            classtype = kwargs.get('phuzzer_type')
+            del kwargs['phuzzer_type']
+        classtype = classtype.upper()
+
+        if classtype == Phuzzer.AFL:
+            from .afl import AFL
+            return AFL(**kwargs)
+        elif classtype == Phuzzer.AFL_MULTICB:
+            from .afl_multicb import AFLMultiCB
+            return AFLMultiCB(**kwargs)
+        elif classtype == Phuzzer.WITCHER_AFL:
+            from .witcherafl import WitcherAFL
+            return WitcherAFL(**kwargs)
+        else:
+            raise ValueError(f"Fuzzer type {classtype} is not found.")
 
     #
     # Some convenience functionality.
@@ -58,6 +109,7 @@ class Phuzzer:
     def timed_out(self):
         if self.timeout is None:
             return False
+
         return time.time() - self.start_time > self.timeout
 
     def start(self):
@@ -73,6 +125,47 @@ class Phuzzer:
             p.terminate()
             p.wait()
     __exit__ = stop
+
+    @staticmethod
+    def init_afl_config(binary_path, is_multicb=False):
+        """
+        Returns AFL_PATH and AFL_DIR, if AFL_PATH is set in os.environ it returns that, if not it attempts to auto-detect
+        :param binary_path:
+        :return: afl_path_var, afl_dir, qemu_arch_name: afl_path_var is location of qemu_trace to use, afl_dir is the location of the afl binaries, qemu_arch_name is the name of the binary's architecture
+        """
+
+        if Phuzzer.afl_bin_dir is not None:
+            return Phuzzer.afl_bin_dir, Phuzzer.qemu_arch_name
+
+        if "AFL_PATH" in os.environ:
+            Phuzzer.afl_bin_dir = os.environ["AFL_PATH"]
+        else:
+
+            if not ANGR_INSTALLED:
+                raise ModuleNotFoundError("AFL_PATH was found in enviornment variables and angr is not installed.")
+            if not SHELLPHISH_AFL_INSTALLED:
+                raise ModuleNotFoundError(
+                    "AFL_PATH was found in enviornment variables and either shellphish_afl is not installed.")
+            try:
+                p = angr.Project(binary_path)
+                Phuzzer.qemu_arch_name = p.arch.qemu_name
+                tracer_id = 'cgc' if p.loader.main_object.os == 'cgc' else p.arch.qemu_name
+                if is_multicb:
+                    tracer_id = 'multi-{}'.format(tracer_id)
+
+                afl_path_var = shellphish_afl.afl_path_var(tracer_id)
+                os.environ['AFL_PATH'] = afl_path_var
+
+                Phuzzer.afl_bin_dir = shellphish_afl.afl_dir(tracer_id)
+                print(f"afl_dir {Phuzzer.afl_bin_dir}")
+
+            except Exception as ex:
+
+                traceback.format_exc()
+                raise ModuleNotFoundError("AFL_PATH was found in enviornment variables and "
+                                          "either angr or shellphish_afl is not installed.")
+
+        return Phuzzer.afl_bin_dir, Phuzzer.qemu_arch_name
 
     @classmethod
     def check_environment(cls):
@@ -138,8 +231,32 @@ class Phuzzer:
     #
     # Dictionary creation
     #
-
     def create_dictionary(self):
+        if ANGR_INSTALLED:
+            return self.create_dictionary_angr()
+        elif ELFTOOLS_INSTALLED:
+            return self.create_dictionary_elftools()
+        else:
+            raise ModuleNotFoundError("Cannot create a dictionary without angr or elftools being installed")
+
+    def create_dictionary_elftools(self):
+        from elftools.elf.elffile import ELFFile
+        MAX = 120
+        strings = set()
+        with open(self.target, 'rb') as f:
+            elf = ELFFile(f)
+
+            for sec in elf.iter_sections():
+                if sec.name not in {'.rodata'}:
+                    continue
+                for match in re.findall(b"[a-zA-Z0-9_]{4}[a-zA-Z0-9_]*", sec.data()):
+                    t = match.decode()
+                    for i in range(0, len(t), MAX):
+                        strings.add(t[i:i + MAX])
+        return strings
+
+    def create_dictionary_angr(self):
+
         l.warning("creating a dictionary of string references within target \"%s\"", self.target)
 
         b = angr.Project(self.target, load_options={'auto_load_libs': False})
@@ -200,5 +317,3 @@ class Phuzzer:
         self.stop()
 
 from ..errors import InstallError
-from .afl import AFL
-from .afl_multicb import AFLMultiCB

@@ -5,11 +5,16 @@ import glob
 import logging
 import networkx
 import subprocess
-import shellphish_qemu
 
 l = logging.getLogger('fuzzer.input_hierarchy')
+try:
+    import shellphish_qemu
+    SHELLPHISH_QEMU_INSTALLED = True
+except ImportError:
+    SHELLPHISH_QEMU_INSTALLED = False
 
-class Input(object):
+
+class Input:
     def __init__(self, filename, instance, hierarchy):
         self.hierarchy = hierarchy
         self.instance = instance
@@ -179,6 +184,9 @@ class Input(object):
 
     @property
     def output(self):
+        if not SHELLPHISH_QEMU_INSTALLED:
+            raise ImportError(
+                "The module 'shellphish-qemu' is not found, but it is required for the output functionality.")
         with open('/dev/null', 'w') as tf, open(self.filepath) as sf:
             cmd_args = [
                 'timeout', '60', shellphish_qemu.qemu_path('cgc-tracer'),
@@ -189,8 +197,12 @@ class Input(object):
 
         return fuck
 
+
     @property
     def trace(self):
+        if not SHELLPHISH_QEMU_INSTALLED:
+            raise ImportError(
+                "The module 'shellphish-qemu' is not found, but it is required for tracing.")
         if self._trace is not None:
             return self._trace
 

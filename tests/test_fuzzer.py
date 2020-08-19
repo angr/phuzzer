@@ -3,12 +3,18 @@ import time
 import phuzzer
 import logging
 l = logging.getLogger("fuzzer.tests.test_fuzzer")
-l.setLevel(logging.DEBUG)
+l.setLevel(logging.WARNING)
 
 import os
-bin_location = str(os.path.join(os.path.dirname(os.path.realpath(__file__)), '../../binaries'))
-fuzzer_bin = str(os.path.join(os.path.dirname(os.path.realpath(__file__)), '../bin'))
+bin_location = None
 
+for x in range(0, 3):
+    bin_location = str(os.path.join(os.path.dirname(os.path.realpath(__file__)), '../'*x, '../../binaries'))
+    if os.path.exists(bin_location):
+        break
+
+if bin_location is None or not os.path.exists(bin_location):
+    raise ValueError("Error cannot find binaries intallation path")
 
 def test_parallel_execution():
     """
@@ -171,5 +177,5 @@ def run_all():
 
 
 if __name__ == "__main__":
-    logging.getLogger("phuzzer").setLevel("DEBUG")
+    logging.getLogger("phuzzer").setLevel("WARNING")
     run_all()
