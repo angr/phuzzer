@@ -65,7 +65,10 @@ class Reporter(Thread):
                     if fstat in ('paths_total', 'unique_crashes'):
                         summary_stats[fstat] = max(summary_stats[fstat], int(fvalue))
                     else:
-                        summary_stats[fstat] += int(fvalue)
+                        try:
+                            summary_stats[fstat] += int(fvalue)
+                        except:
+                            summary_stats[fstat] += 0
                 except ValueError:
                     pass
 

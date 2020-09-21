@@ -6,3 +6,5 @@ from .extensions import *
 from .hierarchy import *
 from .phuzzers.afl import AFL
 from .phuzzers.afl_multicb import AFLMultiCB
+from .phuzzers.afl_ijon import AFLIJON
+
