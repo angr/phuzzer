@@ -89,7 +89,7 @@ class Phuzzer:
             return WitcherAFL(**kwargs)
         elif classtype == Phuzzer.AFL_IJON:
             from .afl_ijon import AFLIJON
-            return AFLIJON(kwargs.get('target'),**kwargs)
+            return AFLIJON(**kwargs)
         else:
             raise ValueError(f"Fuzzer type {classtype} is not found.")
 

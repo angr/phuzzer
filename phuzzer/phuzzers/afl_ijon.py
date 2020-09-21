@@ -11,13 +11,8 @@ class AFLIJON(AFL):
         Paper found here:
         https://www.syssec.ruhr-uni-bochum.de/media/emma/veroeffentlichungen/2020/02/27/IJON-Oakland20.pdf
     """
-
-    def __init__(self, targets, **kwargs):
-        self.targets = targets
-        super().__init__(targets[0], **kwargs)
-
-        self.timeout = 1000 * len(targets)
-        self.target_opts = targets[1:]
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
 
     def choose_afl(self):
         #self.afl_bin_dir, _ = Phuzzer.init_afl_config(self.targets[0])
