@@ -16,6 +16,6 @@ class AFLIJON(AFL):
 
     def choose_afl(self):
         #self.afl_bin_dir, _ = Phuzzer.init_afl_config(self.targets[0])
-        self.afl_bin_dir = '/home/parallels/github/ijon/'
+        self.afl_bin_dir = '/phuzzers/ijon/'
         afl_bin_path = os.path.join(self.afl_bin_dir, "afl-fuzz")
         return afl_bin_path
