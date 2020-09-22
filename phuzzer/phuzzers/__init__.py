@@ -34,6 +34,7 @@ class Phuzzer:
     WITCHER_AFL = "WITCHERAFL"
     AFL = "AFL"
     AFL_IJON = "AFL_IJON"
+    AFL_PLUSPLUS = "AFL++"
 
     qemu_arch_name = ""
     afl_bin_dir = None
@@ -90,6 +91,9 @@ class Phuzzer:
         elif classtype == Phuzzer.AFL_IJON:
             from .afl_ijon import AFLIJON
             return AFLIJON(**kwargs)
+        elif classtype == Phuzzer.AFL_PLUSPLUS:
+            from .afl_plusplus import AFLPlusPlus
+            return AFLPlusPlus(**kwargs)
         else:
             raise ValueError(f"Fuzzer type {classtype} is not found.")
 

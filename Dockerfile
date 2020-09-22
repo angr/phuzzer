@@ -27,10 +27,6 @@ RUN apt-get install -y \
 	python3 \
 	python3-pip 
 
-# AFL
-# RUN git clone https://github.com/google/AFL.git /usr/bin/afl-unix
-# RUN cd /usr/bin/afl-unix && make && make install
-
 # PHUZZER & DEPS
 RUN pip3 install git+https://github.com/shellphish/shellphish-afl
 RUN pip3 install git+https://github.com/shellphish/driller
@@ -43,3 +39,6 @@ RUN ln -s /usr/local/bin/afl-multi-cgc /usr/bin/afl-multi-cgc
 RUN ln -s /usr/local/bin/afl-unix /usr/bin/afl-unix
 RUN ln -s /usr/local/bin/fuzzer-libs /usr/bin/fuzzer-libs
 RUN ln -s /usr/local/bin/driller /usr/bin/driller
+
+# Install AFL-IJON
+
