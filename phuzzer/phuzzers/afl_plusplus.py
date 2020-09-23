@@ -27,18 +27,14 @@ class AFLPlusPlus(AFL):
         if "AFL_SET_AFFINITY" in my_env:
             core_num = int(my_env["AFL_SET_AFFINITY"])
             core_num += instance_cnt
-            args = args[0] + [f"-b {core_num}"] + args[1:]
+            print(args)
+            args += f"-b {core_num}"
 
 
         self.log_command(args, fuzzer_id, my_env)
 
         logpath = os.path.join(self.work_dir, fuzzer_id + ".log")
         l.debug("execing: %s > %s", ' '.join(args), logpath)
-
-        if "afl_set_affinity" in my_env:
-            tempint = int(my_env["AFL_SET_AFFINITY"])
-            tempint += instance_cnt
-            my_env["AFL_SET_AFFINITY"] = str(tempint)
 
         with open(logpath, "w") as fp:
             return subprocess.Popen(args, stdout=fp, stderr=fp, close_fds=True, env=my_env)
