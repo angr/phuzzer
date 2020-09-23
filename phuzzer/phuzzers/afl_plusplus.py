@@ -28,7 +28,7 @@ class AFLPlusPlus(AFL):
             core_num = int(my_env["AFL_SET_AFFINITY"])
             core_num += instance_cnt
             print(args)
-            args += f"-b {core_num}"
+            args = [args[0]] + [f"-b {core_num}"] + args[1:]
 
 
         self.log_command(args, fuzzer_id, my_env)
