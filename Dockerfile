@@ -52,11 +52,12 @@ RUN mkdir /phuzzers/ && cd /phuzzers && \
 
 # Install AFL++
 RUN cd /phuzzers/ && \
+        bash -c "$(wget -O - https://apt.llvm.org/llvm.sh)" && \
         git clone https://github.com/AFLplusplus/AFLplusplus && \
         cd AFLplusplus && \
         apt install build-essential libtool-bin python3-dev automake flex bison ipython3 \
         libglib2.0-dev libpixman-1-dev clang python3-setuptools llvm -y && \
-        make distrib && \
+        LLVM_CONFIG=llvm-config-11 make distrib && \
         make install
 
 # Install Other Fuzzers...
