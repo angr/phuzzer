@@ -39,16 +39,11 @@ RUN ln -s /usr/local/bin/afl-unix /usr/bin/afl-unix
 RUN ln -s /usr/local/bin/fuzzer-libs /usr/bin/fuzzer-libs
 RUN ln -s /usr/local/bin/driller /usr/bin/driller
 
-# Install IJON Phuzzer port
-RUN git clone --single-branch --branch ijon-support https://github.com/angr/phuzzer && \
-        pip3 install ./phuzzer
-
 # Install IJON Fuzzer
 RUN mkdir /phuzzers/ && cd /phuzzers && \
         git clone https://github.com/RUB-SysSec/ijon && \
         apt-get install clang -y && \
         cd ijon && make && cd llvm_mode && LLVM_CONFIG=llvm-config-6.0 CC=clang-6.0 make
-
 
 # Install AFL++
 RUN cd /phuzzers/ && \
@@ -60,4 +55,11 @@ RUN cd /phuzzers/ && \
         LLVM_CONFIG=llvm-config-11 make distrib && \
         make install
 
-# Install Other Fuzzers...
+# Install Other Fuzzers... and place them in the `/phuzzers/` directory
+
+# Install AFL++ Phuzzer port
+RUN git clone --single-branch --branch afl++-support https://github.com/angr/phuzzer && \
+        pip3 install ./phuzzer
+
+
+
