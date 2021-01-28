@@ -30,9 +30,6 @@ class AFLPlusPlus(AFL):
             print(args)
             args = [args[0]] + [f"-b {core_num}"] + args[1:]
 
-
-        self.log_command(args, fuzzer_id, my_env)
-
         logpath = os.path.join(self.work_dir, fuzzer_id + ".log")
         l.debug("execing: %s > %s", ' '.join(args), logpath)
 
