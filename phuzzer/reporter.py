@@ -67,7 +67,7 @@ class Reporter(Thread):
                     else:
                         try:
                             summary_stats[fstat] += int(fvalue)
-                        except:
+                        except Exception:
                             summary_stats[fstat] += 0
                 except ValueError:
                     pass
@@ -89,7 +89,7 @@ class Reporter(Thread):
                                 if ":" in stat:
                                     try:
                                         key, val = stat.split(":")
-                                    except Exception as ex:
+                                    except Exception:
                                         index = stat.find(":")
                                         key = stat[:index]
                                         val = stat[index + 1:]

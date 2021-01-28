@@ -54,7 +54,7 @@ class Phuzzer:
         self.seeds = seeds or [ ]
 
         # processes spun up
-        self.processes            = [ ]
+        self.processes = [ ]
 
         self.start_time = None
         self.end_time = None
@@ -168,7 +168,7 @@ class Phuzzer:
                 Phuzzer.afl_bin_dir = shellphish_afl.afl_dir(tracer_id)
                 print(f"afl_dir {Phuzzer.afl_bin_dir}")
 
-            except Exception as ex:
+            except Exception:
 
                 traceback.format_exc()
                 raise ModuleNotFoundError("AFL_PATH was found in enviornment variables and "

@@ -35,4 +35,3 @@ class AFLPlusPlus(AFL):
 
         with open(logpath, "w") as fp:
             return subprocess.Popen(args, stdout=fp, stderr=fp, close_fds=True, env=my_env)
-
