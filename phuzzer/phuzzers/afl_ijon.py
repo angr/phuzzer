@@ -1,8 +1,9 @@
-from .afl import AFL
 import logging
 import os
 
-l = logging.getLogger("phuzzer.phuzzers.afl")
+from .afl import AFL
+
+l = logging.getLogger("phuzzer.phuzzers.afl_ijon")
 
 
 class AFLIJON(AFL):

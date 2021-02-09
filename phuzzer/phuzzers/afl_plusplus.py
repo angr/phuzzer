@@ -1,9 +1,10 @@
-from .afl import AFL
 import logging
 import os
 import subprocess
 
-l = logging.getLogger("phuzzer.phuzzers.afl")
+from .afl import AFL
+
+l = logging.getLogger("phuzzer.phuzzers.aflplusplus")
 
 
 class AFLPlusPlus(AFL):
