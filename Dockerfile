@@ -1,20 +1,18 @@
-FROM ubuntu:18.04
-
 # build essentials,
 RUN apt-get update && apt-get install -y software-properties-common && \
     apt-add-repository -y universe && \
     apt-get update && \
     apt-get install -y \
-	build-essential \
-	gcc-multilib \
-	libtool \
-	automake \
-	autoconf \
-	bison \
-	git \
+    build-essential \
+    gcc-multilib \
+    libtool \
+    automake \
+    autoconf \
+    bison \
+    git \
     gcc \
-	debootstrap \
- 	debian-archive-keyring \
+    debootstrap \
+    debian-archive-keyring \
     libtool-bin \
     python3 \
     python3-dev \ 
@@ -50,7 +48,7 @@ RUN cd /phuzzers && \
 
 # Install AFL++
 RUN cd /phuzzers/ && \
-	bash -c "$(wget -O - https://apt.llvm.org/llvm.sh)" && \
+    bash -c "$(wget -O - https://apt.llvm.org/llvm.sh)" && \
     git clone https://github.com/AFLplusplus/AFLplusplus && \
     cd AFLplusplus && \
     apt install build-essential libtool-bin python3-dev automake flex bison ipython3 \
