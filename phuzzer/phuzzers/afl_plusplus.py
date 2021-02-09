@@ -4,7 +4,7 @@ import subprocess
 
 from .afl import AFL
 
-l = logging.getLogger("phuzzer.phuzzers.aflplusplus")
+l = logging.getLogger(__name__)
 
 
 class AFLPlusPlus(AFL):

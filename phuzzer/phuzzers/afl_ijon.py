@@ -3,7 +3,7 @@ import os
 
 from .afl import AFL
 
-l = logging.getLogger("phuzzer.phuzzers.afl_ijon")
+l = logging.getLogger(__name__)
 
 
 class AFLIJON(AFL):
