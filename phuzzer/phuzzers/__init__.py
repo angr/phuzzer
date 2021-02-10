@@ -8,6 +8,8 @@ import sys
 import os
 import re
 
+from elftools.elf.elffile import ELFFile
+
 from .afl import AFL
 from .afl_multicb import AFLMultiCB
 from .witcherafl import WitcherAFL
@@ -251,7 +253,6 @@ class Phuzzer:
             raise ModuleNotFoundError("Cannot create a dictionary without angr or elftools being installed")
 
     def create_dictionary_elftools(self):
-        from elftools.elf.elffile import ELFFile
         MAX = 120
         strings = set()
         with open(self.target, 'rb') as f:
