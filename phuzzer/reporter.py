@@ -65,7 +65,10 @@ class Reporter(Thread):
                     if fstat in ('paths_total', 'unique_crashes'):
                         summary_stats[fstat] = max(summary_stats[fstat], int(fvalue))
                     else:
-                        summary_stats[fstat] += int(fvalue)
+                        try:
+                            summary_stats[fstat] += int(fvalue)
+                        except Exception:
+                            summary_stats[fstat] += 0
                 except ValueError:
                     pass
 
@@ -86,7 +89,7 @@ class Reporter(Thread):
                                 if ":" in stat:
                                     try:
                                         key, val = stat.split(":")
-                                    except Exception as ex:
+                                    except Exception:
                                         index = stat.find(":")
                                         key = stat[:index]
                                         val = stat[index + 1:]

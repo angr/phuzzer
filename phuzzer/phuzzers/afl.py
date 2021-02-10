@@ -118,6 +118,10 @@ class AFL(Phuzzer):
 
         super().start()
 
+        # check for the existence of the AFL Directory
+        if self.afl_bin_dir is None or not os.path.isdir(self.afl_bin_dir):
+            l.error("AFL Bin Directory does not exist at: %s.", self.afl_bin_dir)
+
         # create the directory
         with contextlib.suppress(FileExistsError):
             os.makedirs(self.work_dir)

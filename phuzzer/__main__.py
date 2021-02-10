@@ -51,7 +51,7 @@ def main():
     parser.add_argument('-r', '--resume', help="Resume prior run if possible and do not destroy work directory.",
                         action='store_true', default=False)
     parser.add_argument('--reportdir', help="The directory to use for the reports.", default=".")
-    parser.add_argument('-p','--phuzzer-type', '--fuzzer-type', help="Which phuzzer are you using, AFL, Witcher, AFL_MULTICB.", default=Phuzzer.AFL)
+    parser.add_argument('-p','--phuzzer-type', '--fuzzer-type', help="Which phuzzer are you using: AFL, AFL_IJON, AFL++, Witcher, AFL_MULTICB.", default=Phuzzer.AFL)
     args = parser.parse_args()
 
     if os.path.isfile(os.path.join(os.getcwd(), args.logcfg)):

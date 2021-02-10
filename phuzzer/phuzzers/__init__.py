@@ -33,6 +33,9 @@ class Phuzzer:
     AFL_MULTICB = "AFLMULTICB"
     WITCHER_AFL = "WITCHERAFL"
     AFL = "AFL"
+    AFL_IJON = "AFL_IJON"
+    AFL_PLUSPLUS = "AFL++"
+
     qemu_arch_name = ""
     afl_bin_dir = None
 
@@ -51,7 +54,7 @@ class Phuzzer:
         self.seeds = seeds or [ ]
 
         # processes spun up
-        self.processes            = [ ]
+        self.processes = [ ]
 
         self.start_time = None
         self.end_time = None
@@ -85,6 +88,12 @@ class Phuzzer:
         elif classtype == Phuzzer.WITCHER_AFL:
             from .witcherafl import WitcherAFL
             return WitcherAFL(**kwargs)
+        elif classtype == Phuzzer.AFL_IJON:
+            from .afl_ijon import AFLIJON
+            return AFLIJON(**kwargs)
+        elif classtype == Phuzzer.AFL_PLUSPLUS:
+            from .afl_plusplus import AFLPlusPlus
+            return AFLPlusPlus(**kwargs)
         else:
             raise ValueError(f"Fuzzer type {classtype} is not found.")
 
@@ -159,7 +168,7 @@ class Phuzzer:
                 Phuzzer.afl_bin_dir = shellphish_afl.afl_dir(tracer_id)
                 print(f"afl_dir {Phuzzer.afl_bin_dir}")
 
-            except Exception as ex:
+            except Exception:
 
                 traceback.format_exc()
                 raise ModuleNotFoundError("AFL_PATH was found in enviornment variables and "
