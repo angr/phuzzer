@@ -7,15 +7,6 @@ import time
 import sys
 import os
 import re
-
-from elftools.elf.elffile import ELFFile
-
-from .afl import AFL
-from .afl_multicb import AFLMultiCB
-from .witcherafl import WitcherAFL
-from .afl_ijon import AFLIJON
-from .afl_plusplus import AFLPlusPlus
-
 try:
     import angr
     ANGR_INSTALLED = True
@@ -89,14 +80,19 @@ class Phuzzer:
         classtype = classtype.upper()
 
         if classtype == Phuzzer.AFL:
+            from .afl import AFL
             return AFL(**kwargs)
         elif classtype == Phuzzer.AFL_MULTICB:
+            from .afl_multicb import AFLMultiCB
             return AFLMultiCB(**kwargs)
         elif classtype == Phuzzer.WITCHER_AFL:
+            from .witcherafl import WitcherAFL
             return WitcherAFL(**kwargs)
         elif classtype == Phuzzer.AFL_IJON:
+            from .afl_ijon import AFLIJON
             return AFLIJON(**kwargs)
         elif classtype == Phuzzer.AFL_PLUSPLUS:
+            from .afl_plusplus import AFLPlusPlus
             return AFLPlusPlus(**kwargs)
         else:
             raise ValueError(f"Fuzzer type {classtype} is not found.")
@@ -253,6 +249,7 @@ class Phuzzer:
             raise ModuleNotFoundError("Cannot create a dictionary without angr or elftools being installed")
 
     def create_dictionary_elftools(self):
+        from elftools.elf.elffile import ELFFile
         MAX = 120
         strings = set()
         with open(self.target, 'rb') as f:
