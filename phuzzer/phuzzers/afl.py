@@ -2,7 +2,6 @@ from collections import defaultdict
 from ..errors import InstallError
 from ..util import hexescape
 from . import Phuzzer
-import pkg_resources
 import subprocess
 import contextlib
 import logging
@@ -12,7 +11,6 @@ import os
 
 
 l = logging.getLogger("phuzzer.phuzzers.afl")
-l.setLevel(logging.INFO)
 
 
 class AFL(Phuzzer):
@@ -287,9 +285,7 @@ class AFL(Phuzzer):
         # check for afl sensitive settings
         with open("/proc/sys/kernel/core_pattern") as f:
             if not "core" in f.read():
-                err += "!!!! AFL ERROR: Pipe at the beginning of core_pattern\n"
-                err += "++++ TO FIX THIS, LITERALLY JUST EXECUTE THIS COMMAND:\n"
-                err += "     echo core | sudo tee /proc/sys/kernel/core_pattern\n"
+                err += "echo core | sudo tee /proc/sys/kernel/core_pattern\n"
 
         # This file is based on a driver not all systems use
         # http://unix.stackexchange.com/questions/153693/cant-use-userspace-cpufreq-governor-and-set-cpu-frequency
@@ -297,16 +293,12 @@ class AFL(Phuzzer):
         if os.path.exists("/sys/devices/system/cpu/cpu0/cpufreq/scaling_governor"):
             with open("/sys/devices/system/cpu/cpu0/cpufreq/scaling_governor") as f:
                 if not "performance" in f.read():
-                    err += "!!!! AFL ERROR: Suboptimal CPU scaling governor\n"
-                    err += "++++ TO FIX THIS, LITERALLY JUST EXECUTE THIS COMMAND:\n"
-                    err += "    echo performance | sudo tee /sys/devices/system/cpu/cpu*/cpufreq/scaling_governor\n"
+                    err += "echo performance | sudo tee /sys/devices/system/cpu/cpu*/cpufreq/scaling_governor\n"
 
         # TODO: test, to be sure it doesn't mess things up
         with open("/proc/sys/kernel/sched_child_runs_first") as f:
             if not "1" in f.read():
-                err += "!!!! AFL WARNING: We probably want the fork() children to run first\n"
-                err += "++++ TO FIX THIS, LITERALLY JUST EXECUTE THIS COMMAND:\n"
-                err += "     echo 1 | sudo tee /proc/sys/kernel/sched_child_runs_first\n"
+                err += "echo 1 | sudo tee /proc/sys/kernel/sched_child_runs_first\n"
 
         if err:
             raise InstallError(err)
