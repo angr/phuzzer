@@ -181,59 +181,7 @@ class Phuzzer:
         try:
             cls._check_environment()
         except InstallError as e:
-            tmp = ""
-            tmp += "###############################################################################\n"
-            tmp += "###############################################################################\n"
-            tmp += "###############################################################################\n"
-            tmp += "###############################################################################\n"
-            tmp += "############# ATTENTION: YOUR SYSTEM IS MISCONFIGURED FOR FUZZING #############\n"
-            tmp += "############# ATTENTION: YOUR SYSTEM IS MISCONFIGURED FOR FUZZING #############\n"
-            tmp += "############# ATTENTION: YOUR SYSTEM IS MISCONFIGURED FOR FUZZING #############\n"
-            tmp += "############# ATTENTION: YOUR SYSTEM IS MISCONFIGURED FOR FUZZING #############\n"
-            tmp += "############# ATTENTION: YOUR SYSTEM IS MISCONFIGURED FOR FUZZING #############\n"
-            tmp += "############# ATTENTION: YOUR SYSTEM IS MISCONFIGURED FOR FUZZING #############\n"
-            tmp += "############# ATTENTION: YOUR SYSTEM IS MISCONFIGURED FOR FUZZING #############\n"
-            tmp += "############# ATTENTION: YOUR SYSTEM IS MISCONFIGURED FOR FUZZING #############\n"
-            tmp += "############# ATTENTION: YOUR SYSTEM IS MISCONFIGURED FOR FUZZING #############\n"
-            tmp += "###############################################################################\n"
-            tmp += "###############################################################################\n"
-            tmp += "###############################################################################\n"
-            tmp += "###############################################################################\n"
-            tmp += "####### THE FUZZER WILL NOT RUN. AND IT IS ***YOUR FAULT***!!!!!!!!!!!!  ######\n"
-            tmp += "####### DIRECTLY BELOW THIS, THERE ARE CONCRETE REASONS FOR WHY THIS IS  ######\n"
-            tmp += "####### IF YOU COMPLAIN TO US ON GITHUB ABOUT THIS NOT WORKING, AND YOU  ######\n"
-            tmp += "####### DON'T RESOLVE THESE ISSUES FIRST, WE WILL NOT HELP YOU!!!!!!!!!  ######\n"
-            tmp += "####### PLEASE RESOLVE THE ISSUES BELOW.    THEY LITERALLY TELL YOU WHAT ######\n"
-            tmp += "####### YOU HAVE TO EXECUTE. DO NOT ASK FOR HELP IF YOU ARE SEEING THIS  ######\n"
-            tmp += "####### MESSAGE; JUST FIX THE PROBLEM WITH YOUR SYSTEM!!!!!!!!!!!!!!!!!  ######\n"
-            tmp += "###############################################################################\n"
-            tmp += "###############################################################################\n"
-            tmp += "###############################################################################\n"
-            tmp += e.args[0]
-            tmp += "###############################################################################\n"
-            tmp += "###############################################################################\n"
-            tmp += "###############################################################################\n"
-            tmp += "####### FIX THE ABOVE ISSUES BEFORE ASKING FOR HELP. THE TEXT LITERALLY  ######\n"
-            tmp += "####### TELLS YOU HOW TO DO IT. DO NOT ASK FOR HELP ABOUT THIS BEFORE    ######\n"
-            tmp += "####### FIXING THE ABOVE ISSUES. IF YOU ARE SEEING THIS MESSAGE, YOUR    ######\n"
-            tmp += "####### SYSTEM MISCONFIGURATION IS *******YOUR FAULT*********!!!!!!!!!!! ######\n"
-            tmp += "###############################################################################\n"
-            tmp += "###############################################################################\n"
-            tmp += "#######                                                                  ######\n"
-            tmp += "#######                                                                  ######\n"
-            tmp += "#######                GET YOUR SYSTEM SETUP FIXED!!!!!!!!!!             ######\n"
-            tmp += "#######                                                                  ######\n"
-            tmp += "#######                                                                  ######\n"
-            tmp += "###############################################################################\n"
-            tmp += "###############################################################################\n"
-            e.args = (tmp,)
-            xmsg = distutils.spawn.find_executable("xmessage") #pylint:disable=no-member
-            if xmsg:
-                subprocess.Popen([xmsg, tmp]).wait()
-            l.critical(tmp)
-            print(tmp)
-            sys.stderr.write(tmp)
-            sys.stdout.write(tmp)
+            l.error("Your system is misconfigured for fuzzing! Please run the following commands to fix this issue:\n%s", e.args[0])
             raise
 
 
