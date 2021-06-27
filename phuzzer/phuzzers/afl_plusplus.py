@@ -12,8 +12,8 @@ class AFLPlusPlus(AFL):
         Paper found here:
         https://aflplus.plus//papers/aflpp-woot2020.pdf
     """
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
 
     def choose_afl(self):
         self.afl_bin_dir = '/phuzzers/AFLplusplus/'
