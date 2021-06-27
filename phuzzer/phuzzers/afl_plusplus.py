@@ -1,6 +1,6 @@
+import subprocess
 import logging
 import os
-import subprocess
 
 from .afl import AFL
 
@@ -16,7 +16,7 @@ class AFLPlusPlus(AFL):
         super().__init__(*args, **kwargs)
 
     def choose_afl(self):
-        self.afl_bin_dir = '/phuzzers/AFLplusplus/'
+        self.afl_bin_dir = '/phuzzers/AFLplusplus/' if 'AFL_PATH' not in os.environ else os.environ['AFL_PATH']
         afl_bin_path = os.path.join(self.afl_bin_dir, "afl-fuzz")
         return afl_bin_path
 
