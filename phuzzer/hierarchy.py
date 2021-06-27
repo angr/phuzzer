@@ -190,7 +190,7 @@ class Input:
         with open('/dev/null', 'w') as tf, open(self.filepath) as sf:
             cmd_args = [
                 'timeout', '60', shellphish_qemu.qemu_path('cgc-tracer'),
-                self.hierarchy._fuzzer.binary_path
+                self.hierarchy._fuzzer.target
             ]
             process = subprocess.Popen(cmd_args, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=tf)
             fuck, _ = process.communicate(sf.read())
@@ -211,7 +211,7 @@ class Input:
                 'timeout', '2',
                 shellphish_qemu.qemu_path('cgc-tracer'),
                 '-d', 'exec',
-                self.hierarchy._fuzzer.binary_path
+                self.hierarchy._fuzzer.target
             ]
             #print("cat %s | %s" % (self.filepath, ' '.join(cmd_args)))
             process = subprocess.Popen(cmd_args, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -271,7 +271,7 @@ class Input:
     @property
     def contribution_counts(self):
         return {
-            k: len(v) for k,v in self.technique_contributions.iteritems()
+            k: len(v) for k,v in self.technique_contributions.items()
         }
 
 class InputHierarchy(object):
@@ -281,7 +281,7 @@ class InputHierarchy(object):
 
     def __init__(self, fuzzer=None, fuzzer_dir=None, load_crashes=False):
         self._fuzzer = fuzzer
-        self._dir = fuzzer_dir if fuzzer_dir is not None else fuzzer.job_dir
+        self._dir = fuzzer_dir if fuzzer_dir is not None else fuzzer.work_dir
         self.inputs = { }
         self.instance_inputs = { }
         self.instances = [ ]
@@ -349,7 +349,7 @@ class InputHierarchy(object):
                 contributions.setdefault(o, (set(),set()))[0].update(c)
                 found |= c
 
-        return sorted(((k, list(map(len,v))) for k,v in contributions.iteritems()), key=lambda x: x[0].timestamp)
+        return sorted(((k, list(map(len,v))) for k,v in contributions.items()), key=lambda x: x[0].timestamp)
 
     def reload(self, load_crashes):
         self._load_instances()
