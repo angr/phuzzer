@@ -3,6 +3,7 @@ from .phuzzers import *
 from .minimizer import Minimizer
 from .showmap import Showmap
 from .extensions import *
+from .seed import Seed
 from .hierarchy import *
 from .phuzzers.afl import AFL
 from .phuzzers.afl_plusplus import AFLPlusPlus
