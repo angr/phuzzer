@@ -477,6 +477,6 @@ class AFL(Phuzzer):
         # import ipdb
         # ipdb.set_trace()
         afl_bin = os.path.join(afl_dir, "afl-fuzz")
-        print(f"afl_bin={afl_bin}")
+        l.debug(f"afl_bin={afl_bin}")
         return afl_bin
 
