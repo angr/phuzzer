@@ -471,7 +471,7 @@ class AFL(Phuzzer):
         elif directory is not None:
             libpath = os.path.join(afl_dir, "..", "fuzzer-libs", directory)
 
-            l.debug("exporting QEMU_LD_PREFIX of '%s'", libpath)
+            l.debug(f"exporting QEMU_LD_PREFIX of '{libpath}'")
             os.environ['QEMU_LD_PREFIX'] = libpath
 
         # return the AFL path
