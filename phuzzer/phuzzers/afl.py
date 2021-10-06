@@ -229,28 +229,27 @@ class AFL(Phuzzer):
 
         crashes = set()
         for fuzzer in os.listdir(self.work_dir):
-            crashes_dir = os.path.join(self.work_dir, fuzzer, "crashes")
-
-            if not os.path.isdir(crashes_dir):
-                # if this entry doesn't have a crashes directory, just skip it
-                continue
-
-            for crash in os.listdir(crashes_dir):
-                if crash == "README.txt":
-                    # skip the readme entry
+            crashes_dir = glob.iglob(f"{self.work_dir}/fuzzer-*/crashes*")
+            for crash_dir in crashes_dir:
+                if not os.path.isdir(crash_dir):
+                    # if this entry doesn't have a crashes directory, just skip it
                     continue
 
-                attrs = dict(map(lambda x: (x[0], x[-1]), map(lambda y: y.split(":"), crash.split(","))))
+                for crash in os.listdir(crash_dir):
+                    if crash == "README.txt":
+                        # skip the readme entry
+                        continue
 
-                if int(attrs['sig']) not in signals:
-                    continue
+                    attrs = dict(map(lambda x: (x[0], x[-1]), map(lambda y: y.split(":"), crash.split(","))))
 
-                crash_path = os.path.join(crashes_dir, crash)
-                with open(crash_path, 'rb') as f:
-                    crashes.add(f.read())
+                    if int(attrs['sig']) not in signals:
+                        continue
+
+                    crash_path = os.path.join(crash_dir, crash)
+                    with open(crash_path, 'rb') as f:
+                        crashes.add(f.read())
 
         return list(crashes)
-
     #
     # AFL-specific
     #
