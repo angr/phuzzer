@@ -104,7 +104,7 @@ class Reporter(Thread):
                                     print(self.stats.keys())
 
                     try:
-                        fuzz_q_mask = os.path.join(self.work_dir, fuzzer_dir, "crashes", "id*")
+                        fuzz_q_mask = os.path.join(self.work_dir, fuzzer_dir, "crashes*", "id*")
                         self.stats[fuzzer_dir]["unique_crashes"] = len(glob.glob(fuzz_q_mask))
                         fuzz_q_mask = os.path.join(self.work_dir, fuzzer_dir, "queue", "id*")
                         self.stats[fuzzer_dir]["paths_total"] = len(glob.glob(fuzz_q_mask))
