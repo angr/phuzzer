@@ -11,3 +11,4 @@ jobs:
     with:
       nightly: true
       afl: true
+    secrets: inherit
