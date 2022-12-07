@@ -284,6 +284,9 @@ class AFL(Phuzzer):
 
     @staticmethod
     def _check_environment():
+        if "GITHUB_ACTIONS" in os.environ:
+            return True
+
         err = ""
         # check for afl sensitive settings
         with open("/proc/sys/kernel/core_pattern") as f:
