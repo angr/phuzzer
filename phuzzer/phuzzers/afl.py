@@ -299,9 +299,10 @@ class AFL(Phuzzer):
                     err += "echo performance | sudo tee /sys/devices/system/cpu/cpu*/cpufreq/scaling_governor\n"
 
         # TODO: test, to be sure it doesn't mess things up
-        with open("/proc/sys/kernel/sched_child_runs_first") as f:
-            if not "1" in f.read():
-                err += "echo 1 | sudo tee /proc/sys/kernel/sched_child_runs_first\n"
+        if os.path.exists("/proc/sys/kernel/sched_child_runs_first"):
+            with open("/proc/sys/kernel/sched_child_runs_first") as f:
+                if not "1" in f.read():
+                    err += "echo 1 | sudo tee /proc/sys/kernel/sched_child_runs_first\n"
 
         if err:
             raise InstallError(err)
